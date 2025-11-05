@@ -169,12 +169,6 @@ int main(void) {
     glm_perspective(glm_rad(90.0f), 800.0f/600.0f, 0.1f, 100.0f, projection);
     shader_setMat4(myShader, "projection", projection);
 
-    //glm_scale(trans, (vec3){0.5f, 0.5f, 0.5f});
-    //vec4 vec = {1.0f, 0.0f, 0.0f, 1.0f};
-    //glm_mat4_mulv(trans, vec, vec);
-    //printf("VEC:\n");
-    //printf("x: %.2f, y: %.2f, z: %.2f\n", vec[0], vec[1], vec[2]);
-
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
 
@@ -186,41 +180,12 @@ int main(void) {
 
         shader_setInt(myShader, "texture1", 0);
         shader_setInt(myShader, "texture2", 1);
-        // double timeValue = glfwGetTime();
-        // float redValue = sin(timeValue) / 2.0f + 0.5f;
-        // int vertexColorLocation = glGetUniformLocation(shaderProgram, "vertexColor");
-        // glUniform4f(vertexColorLocation, redValue, 0.0f, 0.0f, 1.0f);
-        //float offset = 0.5f;
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture[0]);
 
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texture[1]);
-
-        //mat4 model;
-        //glm_mat4_identity(model);
-        //glm_rotate(model, (float)glfwGetTime() * glm_rad(50.0f), (vec3){0.5f, 1.0f, 0.0f});
-        //unsigned int transformLoc = glGetUniformLocation(myShader->ID, "model");
-        //glUniformMatrix4fv(transformLoc, 1, GL_FALSE, (float*)model);
-
-
-        //vec3 cameraDirection;
-        //vec3 cameraRight;
-        //vec3 cameraUp;
-
-        //glm_vec3_sub(cameraPos, cameraTarget, cameraDirection);
-        //glm_vec3_normalize(cameraDirection);
-
-        //glm_vec3_right(up, cameraDirection, cameraRight);
-        //glm_vec3_normalize(cameraRight);
-
-        //glm_vec3_right(cameraDirection, cameraRight, cameraUp);
-
-        //mat4 view;
-        //glm_mat4_identity(view);
-        //glm_translate(view, (vec3){0.0f, 0.0f, -3.0f});
-        
 
         vec3 direction;
         direction[0] = cos(glm_rad(yaw)) * cos(glm_rad(pitch));
@@ -229,32 +194,10 @@ int main(void) {
         glm_vec3_normalize_to(direction, cameraFront);
 
         mat4 view;
-        //const float radius = 10.0f;
-        //float camX = sin(glfwGetTime()) * radius;
-        //float camZ = cos(glfwGetTime()) * radius;
-        //glm_mat4_identity(view);
-        //vec3 cameraDirection;
-        //glm_vec3_add(cameraPos, cameraFront, cameraDirection);
-        //glm_lookat(
-        //    cameraPos,
-        //    cameraDirection,
-        //    cameraUp,
-        //    view
-        //);
 
         GetViewMatrix(cam, view);
 
         shader_setMat4(myShader, "view", view);
-
-        //mat4 trans;
-        //glm_mat4_identity(trans);
-        ////glm_rotate(trans, glm_rad(90.0f), (vec3){0.0f, 0.0f, 1.0f});
-        ////glm_rotate(trans, (float)glfwGetTime(), (vec3){0.0f, 0.0f, 1.0f});
-        //glm_scale(trans, (vec3){2.0f, 2.0f, 0.0f});
-        ////glm_translate(trans, (vec3){0.5f, 0.5f, 0.0f});
-        //transformLoc = glGetUniformLocation(myShader->ID, "transform");
-        //glUniformMatrix4fv(transformLoc, 1, GL_FALSE, (float*)trans);
-
 
         glBindVertexArray(VAO);
 
@@ -269,15 +212,6 @@ int main(void) {
             glDrawArrays(GL_TRIANGLES, 0, 12);
         }
 
-        //float scale = sin(glfwGetTime());
-        //glm_mat4_identity(trans);
-        //glm_translate(trans, (vec3){0.5f, 0.5f, 0.0f});
-        //glm_scale(trans, (vec3){scale, scale, 0.0f});
-        //glUniformMatrix4fv(transformLoc, 1, GL_FALSE, (float*)trans);
-
-        //glDrawArrays(GL_TRIANGLES, 0, 3);
-        //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
@@ -307,28 +241,18 @@ void processInput(GLFWwindow* window){
         offset = offset - 0.01f;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        //glm_vec3_muladds(cameraFront, cameraSpeed, cameraPos);
         processKeyboard(cam, FORWARD, deltaTime);
     }
 
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        //glm_vec3_muladds(cameraFront, -cameraSpeed, cameraPos);
         processKeyboard(cam, BACKWARD, deltaTime);
     }
 
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        //vec3 right;
-        //glm_vec3_cross(cameraFront, cameraUp, right);
-        //glm_vec3_normalize(right);
-        //glm_vec3_muladds(right, -cameraSpeed, cameraPos);
         processKeyboard(cam, LEFT, deltaTime);
     }
 
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        //vec3 right;
-        //glm_vec3_cross(cameraFront, cameraUp, right);
-        //glm_vec3_normalize(right);
-        //glm_vec3_muladds(right, cameraSpeed, cameraPos);
         processKeyboard(cam, RIGHT, deltaTime);
     }
 }
@@ -357,18 +281,5 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     lastX = xpos;
     lastY = ypos;
 
-    //const float sensitivity = 0.1f;
-    //xoffset *= sensitivity;
-    //yoffset *= sensitivity;
-
     processMouse(cam, xoffset, yoffset, true);
-
-    //yaw += xoffset;
-    //pitch += yoffset;
-
-    //if (pitch > 89.0f)
-    //    pitch = 89.0f;
-
-    //if (pitch < -89.0f)
-    //    pitch = -89.0f;
 }
