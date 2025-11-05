@@ -1,0 +1,374 @@
+#include "libs/camera.h"
+#include "libs/shader_s.h"
+#include "libs/stb_image.h"
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include <cglm/cglm.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdbool.h>
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void processInput(GLFWwindow* window);
+
+const unsigned int WIDTH = 800;
+const unsigned int HEIGHT= 600;
+
+vec3 cameraPos   = {0.0f, 0.0f,  3.0f};
+vec3 cameraFront = {0.0f, 0.0f, -1.0f};
+vec3 cameraUp    = {0.0f, 1.0f,  0.0f};
+
+Camera* cam;
+
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
+
+bool firstMouse = true;
+float lastX = (float)WIDTH / 2;
+float lastY = (float)HEIGHT/ 2;
+float yaw;
+float pitch;
+
+int sign = 1;
+float offset = 0.0f;
+
+int main(void) {
+
+    glfwInit();
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Holiwi UWU", NULL, NULL);
+    if (window == NULL) {
+        printf("Failed to create GLFW Window");
+        glfwTerminate();
+        return -1;
+    }
+    printf("Ventana Abierta\n");
+
+    glfwMakeContextCurrent(window);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetKeyCallback(window, key_callback);
+
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
+        printf("Failed to initialize GLAD");
+        return -1;
+    }
+
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glEnable(GL_DEPTH_TEST);
+
+    cam = camera_create_v(cameraPos, cameraUp, -90.0f, 0.0f);
+    if (!cam) {
+        fprintf(stderr, "Failed to create camera\n");
+        return -1;
+    }
+
+    Shader* myShader = shader_create("vertex.vs", "fragment.fs");
+    if (!myShader) {
+        fprintf(stderr, "Failed to create shader\n");
+        return -1;
+    }
+        
+    float vertices[] = {
+        //frente
+        -1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f,
+         0.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,  0.5f, 1.0f,
+
+        //abajo
+        -1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f,
+         1.0f, -1.0f, -1.0f,  0.0f, 0.0f, 1.0f,  0.5f, 1.0f,
+
+        //derecha
+         1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,  0.0f, 0.0f,
+         1.0f, -1.0f, -1.0f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f,
+         0.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,  0.5f, 1.0f,
+
+        //izquierda
+        -1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,  0.0f, 0.0f,
+         1.0f, -1.0f, -1.0f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f,
+         0.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,  0.5f, 1.0f,
+    };
+    
+    vec3 notCubes[] = {
+        { 0.0f,  0.0f,  0.0f }, 
+        { 2.0f,  5.0f, -15.0f}, 
+        {-1.5f, -2.2f, -2.5f },  
+        {-3.8f, -2.0f, -12.3f},  
+        { 2.4f, -0.4f, -3.5f },  
+        {-1.7f,  3.0f, -7.5f },  
+        { 1.3f, -2.0f, -2.5f },  
+        { 1.5f,  2.0f, -2.5f }, 
+        { 1.5f,  0.2f, -1.5f }, 
+        {-1.3f,  1.0f, -1.5f }  
+    };
+
+    unsigned int VBO, VAO, EBO;
+    glGenBuffers(1, &VBO);
+    glGenVertexArrays(1, &VAO);
+    //glGenBuffers(1, &EBO);
+
+    glBindVertexArray(VAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    //glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+
+    unsigned int texture[2];
+    int width, height, nrChannels;
+    unsigned char* data;
+    glGenTextures(2, texture);
+
+    stbi_set_flip_vertically_on_load(true);
+
+    glBindTexture(GL_TEXTURE_2D, texture[0]);
+
+    data = stbi_load("textures/wall.jpg", &width, &height, &nrChannels, 0);
+    if (data) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    } else {
+        printf("Failed to load wall texture\n");
+    }
+
+    glBindTexture(GL_TEXTURE_2D, texture[1]);
+    data = stbi_load("textures/awesomeface.png", &width, &height, &nrChannels, 0);
+    if (data) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    } else {
+        printf("Failed to load awesomeface texture\n");
+    }
+
+    stbi_image_free(data);
+
+    shader_use(myShader);
+
+    mat4 projection;
+    glm_mat4_identity(projection);
+    glm_perspective(glm_rad(90.0f), 800.0f/600.0f, 0.1f, 100.0f, projection);
+    shader_setMat4(myShader, "projection", projection);
+
+    //glm_scale(trans, (vec3){0.5f, 0.5f, 0.5f});
+    //vec4 vec = {1.0f, 0.0f, 0.0f, 1.0f};
+    //glm_mat4_mulv(trans, vec, vec);
+    //printf("VEC:\n");
+    //printf("x: %.2f, y: %.2f, z: %.2f\n", vec[0], vec[1], vec[2]);
+
+    while (!glfwWindowShouldClose(window)) {
+        processInput(window);
+
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        shader_setFloat(myShader, "offset", offset);
+        shader_setInt(myShader, "sign", sign);
+
+        shader_setInt(myShader, "texture1", 0);
+        shader_setInt(myShader, "texture2", 1);
+        // double timeValue = glfwGetTime();
+        // float redValue = sin(timeValue) / 2.0f + 0.5f;
+        // int vertexColorLocation = glGetUniformLocation(shaderProgram, "vertexColor");
+        // glUniform4f(vertexColorLocation, redValue, 0.0f, 0.0f, 1.0f);
+        //float offset = 0.5f;
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture[0]);
+
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, texture[1]);
+
+        //mat4 model;
+        //glm_mat4_identity(model);
+        //glm_rotate(model, (float)glfwGetTime() * glm_rad(50.0f), (vec3){0.5f, 1.0f, 0.0f});
+        //unsigned int transformLoc = glGetUniformLocation(myShader->ID, "model");
+        //glUniformMatrix4fv(transformLoc, 1, GL_FALSE, (float*)model);
+
+
+        //vec3 cameraDirection;
+        //vec3 cameraRight;
+        //vec3 cameraUp;
+
+        //glm_vec3_sub(cameraPos, cameraTarget, cameraDirection);
+        //glm_vec3_normalize(cameraDirection);
+
+        //glm_vec3_right(up, cameraDirection, cameraRight);
+        //glm_vec3_normalize(cameraRight);
+
+        //glm_vec3_right(cameraDirection, cameraRight, cameraUp);
+
+        //mat4 view;
+        //glm_mat4_identity(view);
+        //glm_translate(view, (vec3){0.0f, 0.0f, -3.0f});
+        
+
+        vec3 direction;
+        direction[0] = cos(glm_rad(yaw)) * cos(glm_rad(pitch));
+        direction[1] = sin(glm_rad(pitch));
+        direction[2] = sin(glm_rad(yaw)) * cos(glm_rad(pitch));
+        glm_vec3_normalize_to(direction, cameraFront);
+
+        mat4 view;
+        //const float radius = 10.0f;
+        //float camX = sin(glfwGetTime()) * radius;
+        //float camZ = cos(glfwGetTime()) * radius;
+        //glm_mat4_identity(view);
+        //vec3 cameraDirection;
+        //glm_vec3_add(cameraPos, cameraFront, cameraDirection);
+        //glm_lookat(
+        //    cameraPos,
+        //    cameraDirection,
+        //    cameraUp,
+        //    view
+        //);
+
+        GetViewMatrix(cam, view);
+
+        shader_setMat4(myShader, "view", view);
+
+        //mat4 trans;
+        //glm_mat4_identity(trans);
+        ////glm_rotate(trans, glm_rad(90.0f), (vec3){0.0f, 0.0f, 1.0f});
+        ////glm_rotate(trans, (float)glfwGetTime(), (vec3){0.0f, 0.0f, 1.0f});
+        //glm_scale(trans, (vec3){2.0f, 2.0f, 0.0f});
+        ////glm_translate(trans, (vec3){0.5f, 0.5f, 0.0f});
+        //transformLoc = glGetUniformLocation(myShader->ID, "transform");
+        //glUniformMatrix4fv(transformLoc, 1, GL_FALSE, (float*)trans);
+
+
+        glBindVertexArray(VAO);
+
+        for (unsigned int i = 0; i < 10; i++){
+            mat4 model;
+            glm_mat4_identity(model);
+            glm_translate(model, notCubes[i]);
+            float angle = 20.0f * i;
+            glm_rotate(model, glm_rad(angle), (vec3){1.0f, 0.3f, 0.5f});
+            shader_setMat4(myShader, "model", model);
+
+            glDrawArrays(GL_TRIANGLES, 0, 12);
+        }
+
+        //float scale = sin(glfwGetTime());
+        //glm_mat4_identity(trans);
+        //glm_translate(trans, (vec3){0.5f, 0.5f, 0.0f});
+        //glm_scale(trans, (vec3){scale, scale, 0.0f});
+        //glUniformMatrix4fv(transformLoc, 1, GL_FALSE, (float*)trans);
+
+        //glDrawArrays(GL_TRIANGLES, 0, 3);
+        //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        
+        float currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+
+    }
+    printf("Ventana Cerrada\n");
+
+    shader_destroy(myShader);
+    glfwTerminate();
+    return 0;
+}
+
+void processInput(GLFWwindow* window){
+
+    float cameraSpeed = 2.5f * deltaTime;
+
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+
+    if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
+        offset = offset + 0.01f;
+
+    if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
+        offset = offset - 0.01f;
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        //glm_vec3_muladds(cameraFront, cameraSpeed, cameraPos);
+        processKeyboard(cam, FORWARD, deltaTime);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        //glm_vec3_muladds(cameraFront, -cameraSpeed, cameraPos);
+        processKeyboard(cam, BACKWARD, deltaTime);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        //vec3 right;
+        //glm_vec3_cross(cameraFront, cameraUp, right);
+        //glm_vec3_normalize(right);
+        //glm_vec3_muladds(right, -cameraSpeed, cameraPos);
+        processKeyboard(cam, LEFT, deltaTime);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        //vec3 right;
+        //glm_vec3_cross(cameraFront, cameraUp, right);
+        //glm_vec3_normalize(right);
+        //glm_vec3_muladds(right, cameraSpeed, cameraPos);
+        processKeyboard(cam, RIGHT, deltaTime);
+    }
+}
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+    glViewport(0, 0, width, height);
+} 
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
+
+    if (key == GLFW_KEY_F && action == GLFW_PRESS) {
+        sign = sign * -1;
+    }
+
+}
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+    if (firstMouse) {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos;
+    lastX = xpos;
+    lastY = ypos;
+
+    //const float sensitivity = 0.1f;
+    //xoffset *= sensitivity;
+    //yoffset *= sensitivity;
+
+    processMouse(cam, xoffset, yoffset, true);
+
+    //yaw += xoffset;
+    //pitch += yoffset;
+
+    //if (pitch > 89.0f)
+    //    pitch = 89.0f;
+
+    //if (pitch < -89.0f)
+    //    pitch = -89.0f;
+}
