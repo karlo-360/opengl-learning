@@ -3,6 +3,7 @@
 
 #include <cglm/cglm.h>
 #include <glad/glad.h>
+#include <stdio.h>
 
 enum Camera_Movement {
     FORWARD,
@@ -108,10 +109,20 @@ void processKeyboard(Camera* cam, enum Camera_Movement direction, float deltaTim
 
     float velocity = cam->MovementSpeed * deltaTime;
 
-    if (direction == FORWARD)
-        glm_vec3_muladds(cam->Front, velocity, cam->Position);
-    if (direction == BACKWARD)
-        glm_vec3_muladds(cam->Front, -velocity, cam->Position);
+    if (direction == FORWARD) {
+        //glm_vec3_muladds(cam->Front, velocity, cam->Position);
+        
+        //y axis fixed
+        cam->Position[0] += cam->Front[0] * velocity;
+        cam->Position[2] += cam->Front[2] * velocity;
+    }
+    if (direction == BACKWARD){
+        //glm_vec3_muladds(cam->Front, -velocity, cam->Position);
+        
+        //y axis fixed
+        cam->Position[0] += cam->Front[0] * -velocity;
+        cam->Position[2] += cam->Front[2] * -velocity;
+    }
     if (direction == LEFT)
         glm_vec3_muladds(cam->Right, -velocity, cam->Position);
     if (direction == RIGHT)

@@ -187,12 +187,6 @@ int main(void) {
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texture[1]);
 
-        vec3 direction;
-        direction[0] = cos(glm_rad(yaw)) * cos(glm_rad(pitch));
-        direction[1] = sin(glm_rad(pitch));
-        direction[2] = sin(glm_rad(yaw)) * cos(glm_rad(pitch));
-        glm_vec3_normalize_to(direction, cameraFront);
-
         mat4 view;
 
         GetViewMatrix(cam, view);
