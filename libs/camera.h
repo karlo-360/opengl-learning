@@ -1,9 +1,10 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#include "cglm/vec3.h"
 #include <cglm/cglm.h>
 #include <glad/glad.h>
-#include <stdio.h>
+#include <stdlib.h>
 
 enum Camera_Movement {
     FORWARD,
@@ -35,14 +36,14 @@ typedef struct Camera {
 
 Camera* camera_create_v(vec3 position, vec3 up, float yaw, float pitch);
 Camera* camera_create_s(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch);
-void processKeyboard(Camera* cam, enum Camera_Movement direction, float deltaTime);
-void processMouse   (Camera* cam, float xoffset, float yoffset, GLboolean constrainPitch);
-void processScroll  (Camera* cam, float yoffset);
-void GetViewMatrix  (Camera* cam, mat4 dest);
+void process_keyboard(Camera* cam, enum Camera_Movement direction, float deltaTime);
+void process_mouse   (Camera* cam, float xoffset, float yoffset, GLboolean constrainPitch);
+void process_scroll  (Camera* cam, float yoffset);
+void get_view_matrix (Camera* cam, mat4 dest);
+void camera_destroy  (Camera* cam);
 
 void updateCameraVectors(Camera* cam){
     vec3 front;
-
     front[0] = cos(glm_rad(cam->Yaw)) * cos(glm_rad(cam->Pitch));
     front[1] = sin(glm_rad(cam->Pitch));
     front[2] = sin(glm_rad(cam->Yaw)) * cos(glm_rad(cam->Pitch));
@@ -105,31 +106,33 @@ Camera* camera_create_s(float posX, float posY, float posZ, float upX, float upY
     return cam;
 }
 
-void processKeyboard(Camera* cam, enum Camera_Movement direction, float deltaTime) {
+void process_keyboard(Camera* cam, enum Camera_Movement direction, float deltaTime) {
 
     float velocity = cam->MovementSpeed * deltaTime;
 
-    if (direction == FORWARD) {
-        //glm_vec3_muladds(cam->Front, velocity, cam->Position);
-        
-        //y axis fixed
-        cam->Position[0] += cam->Front[0] * velocity;
-        cam->Position[2] += cam->Front[2] * velocity;
-    }
-    if (direction == BACKWARD){
-        //glm_vec3_muladds(cam->Front, -velocity, cam->Position);
-        
-        //y axis fixed
-        cam->Position[0] += cam->Front[0] * -velocity;
-        cam->Position[2] += cam->Front[2] * -velocity;
-    }
+    vec3 horizontalFront;
+    glm_vec3_copy(cam->Front, horizontalFront);
+
+    horizontalFront[1] = 0.0f;
+    glm_normalize(horizontalFront);
+
+    vec3 horizontalRight;
+    glm_vec3_cross(horizontalFront, cam->WorldUp, horizontalRight);
+    glm_normalize(horizontalRight);
+
+    if (direction == FORWARD)
+        glm_vec3_muladds(horizontalFront, velocity, cam->Position);
+    if (direction == BACKWARD)
+        glm_vec3_muladds(horizontalFront, -velocity, cam->Position);
     if (direction == LEFT)
-        glm_vec3_muladds(cam->Right, -velocity, cam->Position);
+        glm_vec3_muladds(horizontalRight, -velocity, cam->Position);
     if (direction == RIGHT)
-        glm_vec3_muladds(cam->Right, velocity, cam->Position);
+        glm_vec3_muladds(horizontalRight, velocity, cam->Position);
+
+    //cam->Position[1] = 0.0f;
 }
 
-void processMouse(Camera *cam, float xoffset, float yoffset, GLboolean constrainPitch) {
+void process_mouse(Camera *cam, float xoffset, float yoffset, GLboolean constrainPitch) {
 
     xoffset *= cam->MouseSensitivity;
     yoffset *= cam->MouseSensitivity;
@@ -148,7 +151,7 @@ void processMouse(Camera *cam, float xoffset, float yoffset, GLboolean constrain
     updateCameraVectors(cam);
 }
 
-void processScroll(Camera *cam, float yoffset) {
+void process_scroll(Camera *cam, float yoffset) {
     cam->Zoom -= yoffset;
     if (cam->Zoom < 1.0f)
         cam->Zoom = 1.0f;
@@ -156,7 +159,7 @@ void processScroll(Camera *cam, float yoffset) {
         cam->Zoom = 90.0f;
 }
 
-void GetViewMatrix(Camera* cam, mat4 dest){
+void get_view_matrix(Camera* cam, mat4 dest){
 
     vec3 target;
     glm_vec3_add(cam->Position, cam->Front, target);
@@ -166,6 +169,12 @@ void GetViewMatrix(Camera* cam, mat4 dest){
         cam->Up,
         dest
     );
+}
+
+void camera_destroy(Camera* cam) {
+    if (cam) {
+        free(cam);
+    }
 }
 
 #endif

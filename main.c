@@ -1,24 +1,27 @@
 #include "libs/camera.h"
 #include "libs/shader_s.h"
 #include "libs/stb_image.h"
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <cglm/cglm.h>
-#include <math.h>
 #include <stdio.h>
 #include <stdbool.h>
+
+#include "glad.c"
+#include "stb_image_impl.c"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 
 const unsigned int WIDTH = 800;
 const unsigned int HEIGHT= 600;
 
-vec3 cameraPos   = {0.0f, 0.0f,  3.0f};
-vec3 cameraFront = {0.0f, 0.0f, -1.0f};
-vec3 cameraUp    = {0.0f, 1.0f,  0.0f};
+vec3 cameraPos = {0.0f, 0.0f,  3.0f};
+vec3 cameraUp  = {0.0f, 1.0f,  0.0f};
 
 Camera* cam;
 
@@ -56,6 +59,7 @@ int main(void) {
 
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetKeyCallback(window, key_callback);
+    glfwSetScrollCallback(window, scroll_callback);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
         printf("Failed to initialize GLAD");
@@ -112,7 +116,8 @@ int main(void) {
         {-1.3f,  1.0f, -1.5f }  
     };
 
-    unsigned int VBO, VAO, EBO;
+    //unsigned int VBO, VAO, EBO;
+    unsigned int VBO, VAO;
     glGenBuffers(1, &VBO);
     glGenVertexArrays(1, &VAO);
     //glGenBuffers(1, &EBO);
@@ -164,10 +169,6 @@ int main(void) {
 
     shader_use(myShader);
 
-    mat4 projection;
-    glm_mat4_identity(projection);
-    glm_perspective(glm_rad(90.0f), 800.0f/600.0f, 0.1f, 100.0f, projection);
-    shader_setMat4(myShader, "projection", projection);
 
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
@@ -187,10 +188,13 @@ int main(void) {
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texture[1]);
 
+        mat4 projection;
+        glm_mat4_identity(projection);
+        glm_perspective(glm_rad(cam->Zoom), 800.0f/600.0f, 0.1f, 100.0f, projection);
+        shader_setMat4(myShader, "projection", projection);
+
         mat4 view;
-
-        GetViewMatrix(cam, view);
-
+        get_view_matrix(cam, view);
         shader_setMat4(myShader, "view", view);
 
         glBindVertexArray(VAO);
@@ -217,13 +221,12 @@ int main(void) {
     printf("Ventana Cerrada\n");
 
     shader_destroy(myShader);
+    camera_destroy(cam);
     glfwTerminate();
     return 0;
 }
 
 void processInput(GLFWwindow* window){
-
-    float cameraSpeed = 2.5f * deltaTime;
 
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
@@ -235,19 +238,19 @@ void processInput(GLFWwindow* window){
         offset = offset - 0.01f;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        processKeyboard(cam, FORWARD, deltaTime);
+        process_keyboard(cam, FORWARD, deltaTime);
     }
 
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        processKeyboard(cam, BACKWARD, deltaTime);
+        process_keyboard(cam, BACKWARD, deltaTime);
     }
 
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        processKeyboard(cam, LEFT, deltaTime);
+        process_keyboard(cam, LEFT, deltaTime);
     }
 
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        processKeyboard(cam, RIGHT, deltaTime);
+        process_keyboard(cam, RIGHT, deltaTime);
     }
 }
 
@@ -275,5 +278,9 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     lastX = xpos;
     lastY = ypos;
 
-    processMouse(cam, xoffset, yoffset, true);
+    process_mouse(cam, xoffset, yoffset, true);
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset){
+    process_scroll(cam, yoffset);
 }

@@ -11,10 +11,10 @@ SRC_DIR = $(LIB_DIR)/src
 CFLAGS = -I$(INCLUDE_DIR)
 
 # Flags de enlazado
-LDFLAGS = -L$(LIBRARY_DIR) -lglfw3 -lopengl32 -lgdi32
+LDFLAGS = -L$(LIBRARY_DIR) -lglfw3 -lopengl32 -lgdi32 -Wall -Werror
 
 # Archivos fuente
-SOURCES = main.c $(SRC_DIR)/glad.c stb_image_impl.c
+SOURCES = main.c
 
 # Nombre del ejecutable
 TARGET = main.exe

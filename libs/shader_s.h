@@ -104,7 +104,6 @@ Shader* shader_create(const char* vertexPath, const char* fragmentPath) {
     }
     
     unsigned int vertex, fragment;
-    int success;
     
     // Vertex shader
     vertex = glCreateShader(GL_VERTEX_SHADER);
