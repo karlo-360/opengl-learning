@@ -20,6 +20,7 @@ void shader_setBool (Shader* shader, const char* name, bool  value);
 void shader_setInt  (Shader* shader, const char* name, int   value);
 void shader_setFloat(Shader* shader, const char* name, float value);
 void shader_setMat4 (Shader* shader, const char* name, mat4  value);
+void shader_setVec3 (Shader* shader, const char* name, vec3  value);
 
 void shader_destroy(Shader* shader) {
     if (shader) {
@@ -48,6 +49,9 @@ void shader_setMat4(Shader* shader, const char* name, mat4 value) {
     glUniformMatrix4fv(glGetUniformLocation(shader->ID, name), 1, GL_FALSE, (float*)value);
 }
 
+void shader_setVec3(Shader* shader, const char* name, vec3 value) {
+    glUniform3fv(glGetUniformLocation(shader->ID, name), 1, value);
+}
 
 static char* read_file(const char* filePath) {
     FILE* file = fopen(filePath, "rb");

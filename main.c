@@ -12,7 +12,7 @@
 #include "stb_image_impl.c"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+//void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
@@ -34,9 +34,6 @@ float lastY = (float)HEIGHT/ 2;
 float yaw;
 float pitch;
 
-int sign = 1;
-float offset = 0.0f;
-
 int main(void) {
 
     glfwInit();
@@ -57,8 +54,8 @@ int main(void) {
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
+    //glfwSetKeyCallback(window, key_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
-    glfwSetKeyCallback(window, key_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
@@ -66,7 +63,7 @@ int main(void) {
         return -1;
     }
 
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glEnable(GL_DEPTH_TEST);
 
     cam = camera_create_v(cameraPos, cameraUp, -90.0f, 0.0f);
@@ -75,32 +72,38 @@ int main(void) {
         return -1;
     }
 
-    Shader* myShader = shader_create("vertex.vs", "fragment.fs");
+    Shader* myShader = shader_create("shaders/vertex.vs", "shaders/fragment.fs");
     if (!myShader) {
         fprintf(stderr, "Failed to create shader\n");
+        return -1;
+    }
+    
+    Shader* lightShader = shader_create("shaders/light_vertex.vs", "shaders/light_fragment.fs");
+    if (!lightShader) {
+        fprintf(stderr, "Failed to create light shader\n");
         return -1;
     }
         
     float vertices[] = {
         //frente
-        -1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,  0.0f, 0.0f,
-         1.0f, -1.0f,  1.0f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f,
-         0.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,  0.5f, 1.0f,
+        -1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f,  0.0f, 1.0f, 0.0f,
+         0.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
 
         //abajo
-        -1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,  0.0f, 0.0f,
-         1.0f, -1.0f,  1.0f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f,
-         1.0f, -1.0f, -1.0f,  0.0f, 0.0f, 1.0f,  0.5f, 1.0f,
+        -1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f,  0.0f, 1.0f, 0.0f,
+         1.0f, -1.0f, -1.0f,  0.0f, 0.0f, 1.0f,
 
         //derecha
-         1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,  0.0f, 0.0f,
-         1.0f, -1.0f, -1.0f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f,
-         0.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,  0.5f, 1.0f,
+         1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
+         1.0f, -1.0f, -1.0f,  0.0f, 1.0f, 0.0f,
+         0.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
 
         //izquierda
-        -1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,  0.0f, 0.0f,
-         1.0f, -1.0f, -1.0f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f,
-         0.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,  0.5f, 1.0f,
+        -1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
+         1.0f, -1.0f, -1.0f,  0.0f, 1.0f, 0.0f,
+         0.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
     };
     
     vec3 notCubes[] = {
@@ -116,80 +119,49 @@ int main(void) {
         {-1.3f,  1.0f, -1.5f }  
     };
 
-    //unsigned int VBO, VAO, EBO;
+    vec3 lightColor = {1.0f, 0.0f, 0.0f};
+    vec3 lightPos   = {1.0f, 1.0f, 1.0f};
+
     unsigned int VBO, VAO;
     glGenBuffers(1, &VBO);
     glGenVertexArrays(1, &VAO);
-    //glGenBuffers(1, &EBO);
 
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    //glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
+    unsigned int lightVAO;
+    glGenVertexArrays(1, &lightVAO);
+    glBindVertexArray(lightVAO);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-    unsigned int texture[2];
-    int width, height, nrChannels;
-    unsigned char* data;
-    glGenTextures(2, texture);
-
-    stbi_set_flip_vertically_on_load(true);
-
-    glBindTexture(GL_TEXTURE_2D, texture[0]);
-
-    data = stbi_load("textures/wall.jpg", &width, &height, &nrChannels, 0);
-    if (data) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    } else {
-        printf("Failed to load wall texture\n");
-    }
-
-    glBindTexture(GL_TEXTURE_2D, texture[1]);
-    data = stbi_load("textures/awesomeface.png", &width, &height, &nrChannels, 0);
-    if (data) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    } else {
-        printf("Failed to load awesomeface texture\n");
-    }
-
-    stbi_image_free(data);
-
-    shader_use(myShader);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
 
 
     while (!glfwWindowShouldClose(window)) {
+
+        float currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
         processInput(window);
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        shader_setFloat(myShader, "offset", offset);
-        shader_setInt(myShader, "sign", sign);
-
-        shader_setInt(myShader, "texture1", 0);
-        shader_setInt(myShader, "texture2", 1);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture[0]);
-
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, texture[1]);
+        shader_use(myShader);
+        shader_setVec3(myShader, "lightColor", lightColor);
 
         mat4 projection;
-        glm_mat4_identity(projection);
         glm_perspective(glm_rad(cam->Zoom), 800.0f/600.0f, 0.1f, 100.0f, projection);
         shader_setMat4(myShader, "projection", projection);
 
@@ -209,10 +181,17 @@ int main(void) {
 
             glDrawArrays(GL_TRIANGLES, 0, 12);
         }
+        
+        shader_use(lightShader);
+        shader_setMat4(lightShader, "projection", projection);
+        shader_setMat4(lightShader, "view", view);
+        mat4 model;
+        glm_mat4_identity(model);
+        glm_translate(model, lightPos);
+        shader_setMat4(lightShader, "model", model);
 
-        float currentFrame = glfwGetTime();
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
+        glBindVertexArray(lightVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 12);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -221,6 +200,7 @@ int main(void) {
     printf("Ventana Cerrada\n");
 
     shader_destroy(myShader);
+    shader_destroy(lightShader);
     camera_destroy(cam);
     glfwTerminate();
     return 0;
@@ -230,12 +210,6 @@ void processInput(GLFWwindow* window){
 
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-
-    if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
-        offset = offset + 0.01f;
-
-    if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
-        offset = offset - 0.01f;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         process_keyboard(cam, FORWARD, deltaTime);
@@ -261,7 +235,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
 
     if (key == GLFW_KEY_F && action == GLFW_PRESS) {
-        sign = sign * -1;
+        //sign = sign * -1;
     }
 
 }

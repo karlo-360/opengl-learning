@@ -152,7 +152,7 @@ void process_mouse(Camera *cam, float xoffset, float yoffset, GLboolean constrai
 }
 
 void process_scroll(Camera *cam, float yoffset) {
-    cam->Zoom -= yoffset;
+    cam->Zoom -= yoffset * 5;
     if (cam->Zoom < 1.0f)
         cam->Zoom = 1.0f;
     if (cam->Zoom > 90.0f)
