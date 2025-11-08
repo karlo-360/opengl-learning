@@ -8,6 +8,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <cglm/cglm.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdbool.h>
 
@@ -151,7 +152,7 @@ int main(void) {
         {-1.3f,  1.0f, -1.5f }  
     };
 
-    vec3 lightColor = {1.0f, 1.0f, 1.0f};
+    //vec3 lightColor = {1.0f, 1.0f, 1.0f};
     vec3 lightPos = {1.0f, 0.0f, -5.0f};
 
     unsigned int VBO, VAO;
@@ -192,13 +193,28 @@ int main(void) {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        //vec3 lightPos;
-        //glm_vec3_copy(cam->Position, lightPos);
-
         shader_use(myShader);
-        shader_setVec3(myShader, "lightColor", lightColor);
-        shader_setVec3(myShader, "lightPos", lightPos);
         shader_setVec3(myShader, "viewPos", cam->Position);
+        shader_setVec3(myShader, "lightPos", lightPos);
+
+        vec3 lightColor;
+        lightColor[0] = sin(glfwGetTime() * 2.0);
+        lightColor[1] = sin(glfwGetTime() * 0.7);
+        lightColor[2] = sin(glfwGetTime() * 1.3);
+        
+        vec3 diffuseColor, ambientColor;
+        glm_vec3_mul(lightColor, (vec3){0.5f, 0.5f, 0.5f}, diffuseColor);
+        glm_vec3_mul(lightColor, (vec3){0.2f, 0.2f, 0.2f}, ambientColor);
+
+        shader_setVec3(myShader, "light.position", lightPos);
+        shader_setVec3(myShader, "light.ambient",  ambientColor);
+        shader_setVec3(myShader, "light.diffuse",  diffuseColor);
+        shader_setVec3(myShader, "light.specular", (vec3){1.0f, 1.0f, 1.0f});
+
+        shader_setVec3(myShader, "material.ambient",  (vec3){1.0f, 0.5f, 0.31f});
+        shader_setVec3(myShader, "material.diffuse",  (vec3){1.0f, 0.5f, 0.31f});
+        shader_setVec3(myShader, "material.specular", (vec3){0.5f, 0.5f, 0.50f});
+        shader_setFloat(myShader, "material.shininess", 32.0f);
 
         mat4 projection;
         glm_perspective(glm_rad(cam->Zoom), 800.0f/600.0f, 0.1f, 100.0f, projection);
@@ -229,6 +245,8 @@ int main(void) {
         shader_use(lightShader);
         shader_setMat4(lightShader, "projection", projection);
         shader_setMat4(lightShader, "view", view);
+
+        shader_setVec3(lightShader, "lightColor", lightColor);
 
         mat4 model;
         glm_mat4_identity(model);
