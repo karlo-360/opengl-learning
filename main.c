@@ -1,3 +1,6 @@
+#include "cglm/affine.h"
+#include "cglm/types.h"
+#include "cglm/vec3.h"
 #include "libs/camera.h"
 #include "libs/shader_s.h"
 #include "libs/stb_image.h"
@@ -21,7 +24,7 @@ const unsigned int WIDTH = 800;
 const unsigned int HEIGHT= 600;
 
 vec3 cameraPos = {0.0f, 0.0f,  3.0f};
-vec3 cameraUp  = {0.0f, 1.0f,  0.0f};
+vec3 worldUp  = {0.0f, 1.0f,  0.0f};
 
 Camera* cam;
 
@@ -63,10 +66,10 @@ int main(void) {
         return -1;
     }
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glEnable(GL_DEPTH_TEST);
 
-    cam = camera_create_v(cameraPos, cameraUp, -90.0f, 0.0f);
+    cam = camera_create_v(cameraPos, worldUp, -90.0f, 0.0f);
     if (!cam) {
         fprintf(stderr, "Failed to create camera\n");
         return -1;
@@ -86,28 +89,57 @@ int main(void) {
         
     float vertices[] = {
         //frente
-        -1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
-         1.0f, -1.0f,  1.0f,  0.0f, 1.0f, 0.0f,
-         0.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
-
-        //abajo
-        -1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
-         1.0f, -1.0f,  1.0f,  0.0f, 1.0f, 0.0f,
-         1.0f, -1.0f, -1.0f,  0.0f, 0.0f, 1.0f,
+        -1.0f, -1.0f,  1.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f, 
+         1.0f, -1.0f,  1.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,
+         0.0f,  1.0f,  0.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,
 
         //derecha
-         1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
-         1.0f, -1.0f, -1.0f,  0.0f, 1.0f, 0.0f,
-         0.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
+         1.0f, -1.0f,  1.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,
+         1.0f, -1.0f, -1.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,
+         0.0f,  1.0f,  0.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,
+
+        //abajo
+        -1.0f, -1.0f,  1.0f,  1.0f, 0.2f, 1.0f,  0.0f, 0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f,  1.0f, 0.2f, 1.0f,  0.0f, 0.0f, 0.0f,
+         1.0f, -1.0f, -1.0f,  1.0f, 0.2f, 1.0f,  0.0f, 0.0f, 0.0f,
 
         //izquierda
-        -1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
-         1.0f, -1.0f, -1.0f,  0.0f, 1.0f, 0.0f,
-         0.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
+        -1.0f, -1.0f,  1.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,
+         1.0f, -1.0f, -1.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,
+         0.0f,  1.0f,  0.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,
     };
+
+    //calculate normal vectors
+    for (int i = 0; i < sizeof(vertices) / sizeof(float); i += 27) {
+        vec3 v0 = { vertices[i],     vertices[i+1],  vertices[i+2] };
+        vec3 v1 = { vertices[i+9],   vertices[i+10],  vertices[i+11] };
+        vec3 v2 = { vertices[i+18],  vertices[i+19], vertices[i+20] };
+
+        vec3 edge1, edge2, normal;
+        glm_vec3_sub(v1, v0, edge1);
+        glm_vec3_sub(v2, v0, edge2);
+        glm_vec3_cross(edge1, edge2, normal);
+        glm_vec3_normalize(normal);
+
+        if (i >= (sizeof(vertices) / sizeof(float)) / 2) {
+            normal[0] *= -1;
+            normal[1] *= -1;
+            normal[2] *= -1;
+        }
+
+        for (int j = 0; j < 3; j++) {
+            int base = i + (j * 9) + 6;
+            
+            vertices[base]     = normal[0];
+            vertices[base + 1] = normal[1];
+            vertices[base + 2] = normal[2];
+        }
+
+    }
     
     vec3 notCubes[] = {
         { 0.0f,  0.0f,  0.0f }, 
+        { 1.0f,  1.0f,  1.0f }, 
         { 2.0f,  5.0f, -15.0f}, 
         {-1.5f, -2.2f, -2.5f },  
         {-3.8f, -2.0f, -12.3f},  
@@ -119,8 +151,8 @@ int main(void) {
         {-1.3f,  1.0f, -1.5f }  
     };
 
-    vec3 lightColor = {1.0f, 0.0f, 0.0f};
-    vec3 lightPos   = {1.0f, 1.0f, 1.0f};
+    vec3 lightColor = {1.0f, 1.0f, 1.0f};
+    vec3 lightPos = {1.0f, 0.0f, -5.0f};
 
     unsigned int VBO, VAO;
     glGenBuffers(1, &VBO);
@@ -131,11 +163,14 @@ int main(void) {
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 
     unsigned int lightVAO;
     glGenVertexArrays(1, &lightVAO);
@@ -143,9 +178,8 @@ int main(void) {
     
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-
 
     while (!glfwWindowShouldClose(window)) {
 
@@ -158,8 +192,13 @@ int main(void) {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        //vec3 lightPos;
+        //glm_vec3_copy(cam->Position, lightPos);
+
         shader_use(myShader);
         shader_setVec3(myShader, "lightColor", lightColor);
+        shader_setVec3(myShader, "lightPos", lightPos);
+        shader_setVec3(myShader, "viewPos", cam->Position);
 
         mat4 projection;
         glm_perspective(glm_rad(cam->Zoom), 800.0f/600.0f, 0.1f, 100.0f, projection);
@@ -169,13 +208,18 @@ int main(void) {
         get_view_matrix(cam, view);
         shader_setMat4(myShader, "view", view);
 
+        //mat4 model;
+        //glm_mat4_identity(model);
+        //shader_setMat4(myShader, "model", model);
+
         glBindVertexArray(VAO);
+        //glDrawArrays(GL_TRIANGLES, 0, 12);
 
         for (unsigned int i = 0; i < 10; i++){
             mat4 model;
             glm_mat4_identity(model);
             glm_translate(model, notCubes[i]);
-            float angle = 20.0f * i;
+            float angle = glfwGetTime() * i * 20;
             glm_rotate(model, glm_rad(angle), (vec3){1.0f, 0.3f, 0.5f});
             shader_setMat4(myShader, "model", model);
 
@@ -185,9 +229,11 @@ int main(void) {
         shader_use(lightShader);
         shader_setMat4(lightShader, "projection", projection);
         shader_setMat4(lightShader, "view", view);
+
         mat4 model;
         glm_mat4_identity(model);
         glm_translate(model, lightPos);
+        glm_scale(model, (vec3){0.1f, 0.1f, 0.1f});
         shader_setMat4(lightShader, "model", model);
 
         glBindVertexArray(lightVAO);
