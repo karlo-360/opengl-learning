@@ -89,32 +89,32 @@ int main(void) {
     }
         
     float vertices[] = {
-        //frente
-        -1.0f, -1.0f,  1.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f, 
-         1.0f, -1.0f,  1.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,
-         0.0f,  1.0f,  0.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,
-
-        //derecha
-         1.0f, -1.0f,  1.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,
-         1.0f, -1.0f, -1.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,
-         0.0f,  1.0f,  0.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,
-
-        //abajo
-        -1.0f, -1.0f,  1.0f,  1.0f, 0.2f, 1.0f,  0.0f, 0.0f, 0.0f,
-         1.0f, -1.0f,  1.0f,  1.0f, 0.2f, 1.0f,  0.0f, 0.0f, 0.0f,
-         1.0f, -1.0f, -1.0f,  1.0f, 0.2f, 1.0f,  0.0f, 0.0f, 0.0f,
-
-        //izquierda
-        -1.0f, -1.0f,  1.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,
-         1.0f, -1.0f, -1.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,
-         0.0f,  1.0f,  0.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,
+        //frente              //colors           //normals          //texture coords
+        -1.0f, -1.0f,  1.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,  0.5f, 1.0f,
+         0.0f,  1.0f,  0.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,  1.0f, 0.0f,
+                                                                               
+        //derecha                                                              
+         1.0f, -1.0f,  1.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,  0.0f, 0.0f,
+         1.0f, -1.0f, -1.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,  0.5f, 1.0f,
+         0.0f,  1.0f,  0.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,  1.0f, 0.0f,
+                                                                               
+        //abajo                                                                
+        -1.0f, -1.0f,  1.0f,  1.0f, 0.2f, 1.0f,  0.0f, 0.0f, 0.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f,  1.0f, 0.2f, 1.0f,  0.0f, 0.0f, 0.0f,  0.5f, 1.0f,
+         1.0f, -1.0f, -1.0f,  1.0f, 0.2f, 1.0f,  0.0f, 0.0f, 0.0f,  1.0f, 0.0f,
+                                                                               
+        //izquierda                                                            
+        -1.0f, -1.0f,  1.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,  0.0f, 0.0f,
+         1.0f, -1.0f, -1.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,  0.5f, 1.0f,
+         0.0f,  1.0f,  0.0f,  1.0f, 0.2f, 0.0f,  0.0f, 0.0f, 0.0f,  1.0f, 0.0f,
     };
 
     //calculate normal vectors
-    for (int i = 0; i < sizeof(vertices) / sizeof(float); i += 27) {
+    for (int i = 0; i < sizeof(vertices) / sizeof(float); i += 33) {
         vec3 v0 = { vertices[i],     vertices[i+1],  vertices[i+2] };
-        vec3 v1 = { vertices[i+9],   vertices[i+10],  vertices[i+11] };
-        vec3 v2 = { vertices[i+18],  vertices[i+19], vertices[i+20] };
+        vec3 v1 = { vertices[i+11],   vertices[i+12],  vertices[i+13] };
+        vec3 v2 = { vertices[i+22],  vertices[i+23], vertices[i+24] };
 
         vec3 edge1, edge2, normal;
         glm_vec3_sub(v1, v0, edge1);
@@ -129,8 +129,8 @@ int main(void) {
         }
 
         for (int j = 0; j < 3; j++) {
-            int base = i + (j * 9) + 6;
-            
+            int base = i + (j * 11) + 6;
+
             vertices[base]     = normal[0];
             vertices[base + 1] = normal[1];
             vertices[base + 2] = normal[2];
@@ -164,14 +164,44 @@ int main(void) {
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(6 * sizeof(float)));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
+
+    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(9 * sizeof(float)));
+    glEnableVertexAttribArray(3);
+
+    unsigned int texture[2];
+    int width, height, nrChannels;
+    unsigned char* data;
+
+    glGenTextures(2, texture);
+    glBindTexture(GL_TEXTURE_2D, texture[0]);
+
+    stbi_set_flip_vertically_on_load(true);
+    data = stbi_load("textures/container2.png", &width, &height, &nrChannels, 0);
+    if (data) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    } else {
+        printf("failed to load container2 texture\n");
+    }
+
+    glBindTexture(GL_TEXTURE_2D, texture[1]);
+    data = stbi_load("textures/container2_specular.png", &width, &height, &nrChannels, 0);
+    if (data) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    } else {
+        printf("failed to load container2_specular texture\n");
+    }
+
+    stbi_image_free(data);
 
     unsigned int lightVAO;
     glGenVertexArrays(1, &lightVAO);
@@ -179,7 +209,7 @@ int main(void) {
     
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
     while (!glfwWindowShouldClose(window)) {
@@ -197,10 +227,11 @@ int main(void) {
         shader_setVec3(myShader, "viewPos", cam->Position);
         shader_setVec3(myShader, "lightPos", lightPos);
 
-        vec3 lightColor;
-        lightColor[0] = sin(glfwGetTime() * 2.0);
-        lightColor[1] = sin(glfwGetTime() * 0.7);
-        lightColor[2] = sin(glfwGetTime() * 1.3);
+        vec3 lightColor = {1.0f, 1.0f, 1.0f};
+        //vec3 lightColor = {1.0f, 0.0f, 0.0f};
+        //lightColor[0] = sin(glfwGetTime() * 2.0);
+        //lightColor[1] = sin(glfwGetTime() * 0.7);
+        //lightColor[2] = sin(glfwGetTime() * 1.3);
         
         vec3 diffuseColor, ambientColor;
         glm_vec3_mul(lightColor, (vec3){0.5f, 0.5f, 0.5f}, diffuseColor);
@@ -209,11 +240,14 @@ int main(void) {
         shader_setVec3(myShader, "light.position", lightPos);
         shader_setVec3(myShader, "light.ambient",  ambientColor);
         shader_setVec3(myShader, "light.diffuse",  diffuseColor);
-        shader_setVec3(myShader, "light.specular", (vec3){1.0f, 1.0f, 1.0f});
+        //shader_setVec3(myShader, "light.specular", (vec3){1.0f, 1.0f, 1.0f});
+        shader_setVec3(myShader, "light.specular", lightColor);
 
         shader_setVec3(myShader, "material.ambient",  (vec3){1.0f, 0.5f, 0.31f});
-        shader_setVec3(myShader, "material.diffuse",  (vec3){1.0f, 0.5f, 0.31f});
-        shader_setVec3(myShader, "material.specular", (vec3){0.5f, 0.5f, 0.50f});
+        //shader_setVec3(myShader, "material.diffuse",  (vec3){1.0f, 0.5f, 0.31f});
+        shader_setInt(myShader, "material.diffuse", 0);
+        shader_setInt(myShader, "material.specular", 1);
+        //shader_setVec3(myShader, "material.specular", (vec3){0.5f, 0.5f, 0.50f});
         shader_setFloat(myShader, "material.shininess", 32.0f);
 
         mat4 projection;
@@ -227,6 +261,11 @@ int main(void) {
         //mat4 model;
         //glm_mat4_identity(model);
         //shader_setMat4(myShader, "model", model);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture[0]);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, texture[1]);
 
         glBindVertexArray(VAO);
         //glDrawArrays(GL_TRIANGLES, 0, 12);
